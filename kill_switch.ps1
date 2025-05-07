@@ -1,9 +1,11 @@
-# ── 한글 깨짐 방지 설정 (반드시 맨 위에) ────────────────────────────────
-# 1) 콘솔 코드페이지를 UTF-8(65001)로 변경
+# ── 한글 깨짐 방지 (반드시 맨 위에) ─────────────────────────────────────
+# 콘솔 코드페이지를 UTF-8(65001)로 변경
 chcp 65001 | Out-Null
 
-# 2) PowerShell 출력 인코딩을 UTF-8로 설정
+# 파워쉘 입출력 모두 UTF-8 사용
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+
 
 Write-Host "##################################################"
 Write-Host "#          !!! 경 고 !!!                         #"
