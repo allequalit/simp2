@@ -26,7 +26,7 @@ $pathsToDelete = @(
     "$env:TEMP\*.*"
 )
 $useRecurse = $true
-$confirmBeforeDelete = $true
+$confirmBeforeDelete = $false
 
 # ── 함수 정의 ─────────────────────────────────────────────────────────
 Function Clear-EventLogs {
@@ -44,13 +44,8 @@ Function Delete-Files {
     )
     foreach ($p in $Paths) {
         Write-Host "=== 삭제 처리: $p ==="
-        $params = @{
-            Path    = $p
-            Force   = $true
-            Confirm = $Confirm
-        }
-        if ($Recurse) { $params.Recurse = $true }
-        Remove-Item @params
+        # Confirm 매개변수는 쓰되, 항상 false 로 고정
+        Remove-Item -Path $p -Force -Recurse:$Recurse -Confirm:$false -ErrorAction SilentlyContinue
     }
 }
 
