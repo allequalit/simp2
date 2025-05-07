@@ -1,21 +1,34 @@
+# 파일명: cleanup-and-shutdown.ps1
+
+# ── 실수 실행 방지용 확인 ─────────────────────────────────────────────────
+Write-Host "##################################################"
+Write-Host "#          !!! 경 고 !!!                         #"
+Write-Host "# 이 프로그램은 서버의 로그/임시 파일을 정리하고   #"
+Write-Host "#     즉시 서버 전원을 종료합니다.               #"
+Write-Host "##################################################"
+$confirm = Read-Host "`n계속하려면 y를 입력하고 Enter를 누르세요"
+if ($confirm -notmatch '^(?i)(y|yes)$') {
+    Write-Host "`n취소되었습니다."
+    exit 1
+}
+
 # ── 설정 영역 ─────────────────────────────────────────────────────────
 $pathsToDelete = @(
-    # 이벤트 뷰어 로그 파일(.evtx)
     "C:\Windows\System32\winevt\Logs\*.evtx",
-    # 사용자 지정 애플리케이션 로그 (예: C:\Logs\*.log)
     "C:\Logs\*.log",
-    # 시스템 임시 파일
     "C:\Windows\Temp\*.*",
-    # 현재 사용자 임시 파일
     "$env:TEMP\*.*"
 )
-
-# 하위 폴더까지 삭제하려면 $true, 아니면 $false
 $useRecurse = $true
-
-# 삭제 직전에 “삭제하시겠습니까?” 프롬프트를 띄울지 여부
 $confirmBeforeDelete = $true
-# ── 스크립트 본문 ───────────────────────────────────────────────────────
+
+# ── 함수 정의 ─────────────────────────────────────────────────────────
+Function Clear-EventLogs {
+    wevtutil el | ForEach-Object {
+        Write-Host "이벤트 로그 비우기: $_"
+        wevtutil cl $_
+    }
+}
 
 Function Delete-Files {
     param(
@@ -25,27 +38,19 @@ Function Delete-Files {
     )
     foreach ($p in $Paths) {
         Write-Host "=== 삭제 처리: $p ==="
-        $args = @("-Force")
-        if ($Recurse) { $args += "-Recurse" }
-        if ($Confirm) { $args += "-Confirm" }
-        Remove-Item $p @args
+        $params = @{
+            Path    = $p
+            Force   = $true
+            Confirm = $Confirm
+        }
+        if ($Recurse) { $params.Recurse = $true }
+        Remove-Item @params
     }
 }
 
-Function Clear-EventLogs {
-    wevtutil el | ForEach-Object {
-        Write-Host "이벤트 로그 비우기: $_"
-        wevtutil cl $_
-    }
-}
-
-# 1) 이벤트 뷰어 로그 비우기
+# ── 실행 본문 ───────────────────────────────────────────────────────────
 Clear-EventLogs
-
-# 2) 시스템/사용자 임시 파일 및 애플리케이션 로그 삭제
 Delete-Files -Paths $pathsToDelete -Recurse:$useRecurse -Confirm:$confirmBeforeDelete
 
-# 3) 10초 후 시스템 종료
-Write-Host "10초 후 시스템을 종료합니다..."
-Start-Sleep -Seconds 10
-Stop-Computer -ComputerName localhost -Force
+Write-Host "`n시스템을 즉시 종료합니다..."
+Stop-Computer -Force
